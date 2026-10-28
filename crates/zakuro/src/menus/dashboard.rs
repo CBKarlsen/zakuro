@@ -123,6 +123,9 @@ impl Menus {
                     if ui.button("Multiplayer").clicked() {
                         self.multiplayer_open = true;
                     }
+                    if ui.button("Open game…").on_hover_text("Play one game file from anywhere, ⌘O").clicked() {
+                        actions.push(Action::OpenGame);
+                    }
                     if settings.games.is_some() {
                         if ui.button("Refresh").clicked() {
                             actions.push(Action::Rescan);
@@ -241,6 +244,9 @@ fn welcome(ui: &mut egui::Ui, actions: &mut Vec<Action>) {
             .corner_radius(8);
         if ui.add_sized([240.0, 38.0], button).clicked() {
             actions.push(Action::ChooseFolder);
+        }
+        if ui.button("or open one game file…").clicked() {
+            actions.push(Action::OpenGame);
         }
         ui.add_space(8.0);
         ui.label(RichText::new("Games have to be decrypted .3ds, .cci, .cxi or .cia files that you dumped yourself.").small().weak());

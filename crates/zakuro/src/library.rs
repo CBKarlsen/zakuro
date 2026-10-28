@@ -4,7 +4,7 @@ use std::path::{Path, PathBuf};
 use std::sync::mpsc::{channel, Receiver};
 
 /// file endings of games Zakuro opens.
-const GAME_FILES: [&str; 4] = ["3ds", "cci", "cxi", "cia"];
+pub const GAME_FILES: [&str; 4] = ["3ds", "cci", "cxi", "cia"];
 /// the icon's side, in pixels.
 pub const ICON_SIZE: usize = 48;
 
@@ -95,14 +95,15 @@ impl Library {
     }
 }
 
+/// whether the file is one of the kinds of game Zakuro opens, by its name.
+pub fn is_game(path: &Path) -> bool {
+    path.extension().and_then(|extension| extension.to_str()).is_some_and(|extension| GAME_FILES.contains(&extension.to_ascii_lowercase().as_str()))
+}
+
 /// the games in folder, and the Download Play children.
 fn scan(folder: &Path, data_dir: Option<&Path>) -> (Vec<Game>, Vec<Addon>) {
     let Ok(entries) = std::fs::read_dir(folder) else { return (Vec::new(), Vec::new()) };
-    let paths = entries.filter_map(|entry| entry.ok().map(|entry| entry.path())).filter(|path| {
-        path.extension()
-            .and_then(|extension| extension.to_str())
-            .is_some_and(|extension| GAME_FILES.contains(&extension.to_ascii_lowercase().as_str()))
-    });
+    let paths = entries.filter_map(|entry| entry.ok().map(|entry| entry.path())).filter(|path| is_game(path));
     let (mut games, mut addons, mut children) = (Vec::new(), Vec::new(), Vec::new());
     for path in paths {
         match addon(&path) {

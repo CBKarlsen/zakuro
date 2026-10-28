@@ -24,7 +24,7 @@ use std::time::{Duration, Instant};
 use winit::application::ApplicationHandler;
 use winit::event::{ElementState, KeyEvent, MouseButton, WindowEvent};
 use winit::event_loop::{ActiveEventLoop, ControlFlow, EventLoop};
-use winit::keyboard::{KeyCode, PhysicalKey};
+use winit::keyboard::{KeyCode, ModifiersState, PhysicalKey};
 use winit::window::{Fullscreen, Window, WindowId};
 
 use zakuro_common::Screen;
@@ -102,6 +102,7 @@ pub fn run(linked: Option<Linked>) {
         spent: Spent::default(),
         paused: false,
         fast_forward_key: false,
+        modifiers: ModifiersState::empty(),
         fast_forwarding: false,
         next_shown: Instant::now(),
         stop: false,
@@ -386,6 +387,8 @@ struct App {
     paused: bool,
     /// Tab is held down, for fast forward.
     fast_forward_key: bool,
+    /// the modifier keys held, for the Mac's shortcuts with Command.
+    modifiers: ModifiersState,
     /// the game runs as fast as it can, its sound left out.
     fast_forwarding: bool,
     /// when fast forward shows its next frame, on a grid at the console's
@@ -534,7 +537,10 @@ impl ApplicationHandler for App {
                     backend.resize(size.width, size.height);
                 }
             }
+            WindowEvent::ModifiersChanged(modifiers) => self.modifiers = modifiers.state(),
             WindowEvent::KeyboardInput { event, .. } => self.key(event, consumed),
+            // a game dropped on the window starts
+            WindowEvent::DroppedFile(path) if library::is_game(&path) => self.act(Action::Play(path), event_loop),
             WindowEvent::MouseInput { state, button, .. } => {
                 if button == MouseButton::Left {
                     self.mouse_down = state == ElementState::Pressed && !self.pointer_taken(consumed);
@@ -700,6 +706,16 @@ impl App {
         Ok(())
     }
 
+    /// asks for a game to play, from whichever folder.
+    fn open_game(&mut self) {
+        let picked = rfd::FileDialog::new().set_title("A game to play").add_filter("3DS games", &library::GAME_FILES).pick_file();
+        if let Some(path) = picked {
+            if let Err(error) = self.play(&path) {
+                self.menus.message = Some(error);
+            }
+        }
+    }
+
     fn back_to_library(&mut self) {
         self.game = None;
         if let Some(room) = &self.room {
@@ -727,6 +743,17 @@ impl App {
                     *key = code;
                 }
                 self.apply_settings();
+            }
+            return;
+        }
+        // the Mac's shortcuts, which the game doesn't see. Command-Q is in
+        // the menu winit gives the app
+        if cfg!(target_os = "macos") && pressed && self.modifiers.super_key() {
+            match code {
+                KeyCode::Comma if !event.repeat => self.menus.settings_open = !self.menus.settings_open,
+                KeyCode::KeyF if !event.repeat => self.toggle_fullscreen(),
+                KeyCode::KeyO if !event.repeat => self.open_game(),
+                _ => {}
             }
             return;
         }
@@ -1017,6 +1044,7 @@ impl App {
                     self.menus.message = Some(error);
                 }
             }
+            Action::OpenGame => self.open_game(),
             Action::Recompile(index) => self.recompile(index, false),
             Action::DownloadCompiler(index) => self.recompile(index, true),
             Action::Mods(program_id) => {

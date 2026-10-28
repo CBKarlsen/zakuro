@@ -28,6 +28,8 @@ pub enum Action {
     Mods(u64),
     CancelRecompile(u64),
     ChooseFolder,
+    /// pick one game to play, wherever it is.
+    OpenGame,
     ChooseBackground,
     /// pick the picture the cameras see.
     ChooseCameraPicture,
