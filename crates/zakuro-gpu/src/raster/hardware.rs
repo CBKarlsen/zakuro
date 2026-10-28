@@ -5501,6 +5501,50 @@ pub(crate) fn can_render(instance: &ash::Instance, device: vk::PhysicalDevice, f
     families.get(family as usize).is_some_and(|f| f.queue_flags.contains(both)) && renders_on(instance, device)
 }
 
+/// the Vulkan loader, by name, or on macOS where Homebrew keeps it out of
+/// the library search path, from where it puts it.
+pub(crate) fn load_entry() -> Result<ash::Entry, ash::LoadingError> {
+    // SAFETY: loads the system's Vulkan library, which has no other
+    // requirements
+    let found = unsafe { ash::Entry::load() };
+    if !cfg!(target_os = "macos") {
+        return found;
+    }
+    // shortcut: the Vulkan SDK's own folder isn't tried, add it here if it's needed
+    found.or_else(|error| {
+        ["/opt/homebrew/lib", "/usr/local/lib"]
+            .iter()
+            // SAFETY: as above
+            .find_map(|dir| unsafe { ash::Entry::load_from(format!("{dir}/libvulkan.dylib")) }.ok())
+            .ok_or(error)
+    })
+}
+
+/// the instance extension and flag the loader lists a portability driver
+/// with, MoltenVK on macOS, which it leaves out otherwise. nothing elsewhere.
+pub(crate) fn portability_instance(entry: &ash::Entry) -> (Vec<*const std::ffi::c_char>, vk::InstanceCreateFlags) {
+    let name = ash::khr::portability_enumeration::NAME;
+    let listed = || {
+        // SAFETY: a query on the loader
+        let available = unsafe { entry.enumerate_instance_extension_properties(None) }.unwrap_or_default();
+        available.iter().any(|e| e.extension_name_as_c_str() == Ok(name))
+    };
+    if cfg!(target_os = "macos") && listed() {
+        (vec![name.as_ptr()], vk::InstanceCreateFlags::ENUMERATE_PORTABILITY_KHR)
+    } else {
+        (Vec::new(), vk::InstanceCreateFlags::empty())
+    }
+}
+
+/// the portability subset extension, which a device that has it has to be
+/// made with.
+pub(crate) fn portability_subset(instance: &ash::Instance, physical: vk::PhysicalDevice) -> Option<*const std::ffi::c_char> {
+    let name = ash::khr::portability_subset::NAME;
+    // SAFETY: the physical device came from this instance
+    let available = unsafe { instance.enumerate_device_extension_properties(physical) }.unwrap_or_default();
+    available.iter().any(|e| e.extension_name_as_c_str() == Ok(name)).then(|| name.as_ptr())
+}
+
 /// a device the renderer draws with, on a GPU can_render or pick chose,
 /// with the extensions given besides its own. it owns the instance from then
 /// on, destroying it when it goes, which stays the caller's when it fails.
@@ -5515,6 +5559,7 @@ pub(crate) fn render_device(
     let queues = [vk::DeviceQueueCreateInfo::default().queue_family_index(family).queue_priorities(&priorities)];
     let mut extensions = vec![ash::khr::push_descriptor::NAME.as_ptr()];
     extensions.extend_from_slice(extra);
+    extensions.extend(portability_subset(instance, physical));
     // SAFETY: the physical device came from this instance
     let supported = unsafe { instance.get_physical_device_features(physical) };
     let logic_ops = supported.logic_op == vk::TRUE;
@@ -5599,13 +5644,12 @@ fn dynamic_state(instance: &ash::Instance, physical: vk::PhysicalDevice, logic_o
 
 /// a device of the renderer's own, on the GPU pick chooses.
 pub(crate) fn own_device() -> Result<SharedDevice, String> {
-    // SAFETY: loads the system's Vulkan library, which has no other
-    // requirements
-    let entry = unsafe { ash::Entry::load() }.map_err(|e| format!("no Vulkan loader, {e}"))?;
+    let entry = load_entry().map_err(|e| format!("no Vulkan loader, {e}"))?;
     let app = vk::ApplicationInfo::default().application_name(c"zakuro").api_version(vk::API_VERSION_1_3);
-    // SAFETY: a plain instance with no layers or extensions
-    let instance = unsafe { entry.create_instance(&vk::InstanceCreateInfo::default().application_info(&app), None) }
-        .map_err(vk_error("create an instance"))?;
+    let (extensions, flags) = portability_instance(&entry);
+    let info = vk::InstanceCreateInfo::default().application_info(&app).enabled_extension_names(&extensions).flags(flags);
+    // SAFETY: an instance with no layers, and the extensions checked above
+    let instance = unsafe { entry.create_instance(&info, None) }.map_err(vk_error("create an instance"))?;
     let made = pick(&instance).and_then(|(physical, family)| render_device(&entry, &instance, physical, family, &[]));
     if made.is_err() {
         // SAFETY: nothing made from the instance is left
