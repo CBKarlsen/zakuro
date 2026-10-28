@@ -67,7 +67,7 @@ jobs:
           TAG: ${{ inputs.tag || github.ref_name }}
         run: |
           cat > notes.md <<'NOTES'
-          On Windows, unzip zakuro-windows-x86_64.zip and run zakuro.exe. On a Mac with Apple silicon, unzip zakuro-macos-arm64.zip and move Zakuro.app to Applications. The app isn't notarized, so the first time, right-click it and choose Open, or run `xattr -cr /Applications/Zakuro.app` once. On Linux, extract zakuro-linux-x86_64.tar.gz and run ./zakuro, which needs the ALSA library (libasound2 on Debian and Ubuntu, alsa-lib on Arch).
+          On Windows, unzip zakuro-windows-x86_64.zip and run zakuro.exe. On a Mac with Apple silicon, unzip zakuro-macos-arm64.zip and move Zakuro.app to Applications. The app isn't notarized, so macOS blocks it the first time: open it once, then choose Open Anyway under System Settings, Privacy & Security, or run `xattr -cr /Applications/Zakuro.app` once. On Linux, extract zakuro-linux-x86_64.tar.gz and run ./zakuro, which needs the ALSA library (libasound2 on Debian and Ubuntu, alsa-lib on Arch).
 
           Games need to be decrypted ROMs. Recompiling a game, which makes it run much faster, needs a C compiler. Zakuro uses gcc or clang when the computer has one, and otherwise offers to download Zig, which needs no installing, into its own folder.
           NOTES
