@@ -5501,8 +5501,8 @@ pub(crate) fn can_render(instance: &ash::Instance, device: vk::PhysicalDevice, f
     families.get(family as usize).is_some_and(|f| f.queue_flags.contains(both)) && renders_on(instance, device)
 }
 
-/// the Vulkan loader, by name, or on macOS where Homebrew keeps it out of
-/// the library search path, from where it puts it.
+/// the Vulkan loader, by name, or on macOS where the app bundle and Homebrew
+/// keep it out of the library search path, from where they put it.
 pub(crate) fn load_entry() -> Result<ash::Entry, ash::LoadingError> {
     // SAFETY: loads the system's Vulkan library, which has no other
     // requirements
@@ -5510,12 +5510,14 @@ pub(crate) fn load_entry() -> Result<ash::Entry, ash::LoadingError> {
     if !cfg!(target_os = "macos") {
         return found;
     }
+    // the bundle's Frameworks folder is next to the folder the program is in
+    let bundled = std::env::current_exe().ok().and_then(|exe| Some(exe.parent()?.join("../Frameworks")));
+    let mut dirs = bundled.into_iter().chain(["/opt/homebrew/lib", "/usr/local/lib"].map(Into::into));
     // shortcut: the Vulkan SDK's own folder isn't tried, add it here if it's needed
     found.or_else(|error| {
-        ["/opt/homebrew/lib", "/usr/local/lib"]
-            .iter()
+        dirs
             // SAFETY: as above
-            .find_map(|dir| unsafe { ash::Entry::load_from(format!("{dir}/libvulkan.dylib")) }.ok())
+            .find_map(|dir| unsafe { ash::Entry::load_from(dir.join("libvulkan.dylib")) }.ok())
             .ok_or(error)
     })
 }
