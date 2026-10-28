@@ -23,7 +23,7 @@ mkdir -p "$app/Frameworks"
 xcrun --sdk iphonesimulator swiftc -target arm64-apple-ios17.0-simulator -O -parse-as-library \
     -import-objc-header "$root/ios/Zakuro-Bridging-Header.h" "$root/ios/ZakuroApp.swift" \
     -L "$root/target/$target/release" -L "$code" -lzakuro_apple -lrecomp \
-    -framework Foundation -framework CoreGraphics -framework CoreFoundation -lobjc -liconv -lm \
+    -framework Foundation -framework CoreGraphics -framework CoreFoundation -framework AudioToolbox -framework CoreAudio -lobjc -liconv -lm \
     -o "$app/Zakuro"
 sed "s/VERSION/$version/; s/PROGRAMID/$program_id/" "$root/ios/Info.plist" >"$app/Info.plist"
 install -m 644 "$moltenvk" "$app/Frameworks/libMoltenVK.dylib"

@@ -1,6 +1,7 @@
 // the app around a game Zakuro runs: the two screens, the console's buttons
 // and the touch screen. Zakuro itself is in crates/zakuro-apple.
 
+import AVFoundation
 import SwiftUI
 import UniformTypeIdentifiers
 
@@ -53,6 +54,9 @@ final class Emulator: ObservableObject {
     let bottom = PictureView()
 
     func start(rom: String) {
+        // plays with the silent switch on, as a game does
+        try? AVAudioSession.sharedInstance().setCategory(.playback)
+        try? AVAudioSession.sharedInstance().setActive(true)
         // the recompiled code uses the stack as the console's code does, and a thread has little by default
         let thread = Thread { self.run(rom: rom) }
         thread.stackSize = 64 << 20

@@ -13,6 +13,12 @@ use zakuro_core::recompiled::Linked;
 use zakuro_core::services::hid::{InputState, PadState};
 use zakuro_core::{loader, Config, FrameOutcome, System};
 
+// the sound output the program for computers has, which cpal makes on iOS as
+// well, and of which the app uses what it needs
+#[allow(dead_code)]
+#[path = "../../zakuro/src/audio.rs"]
+mod audio;
+
 // the tables 3dsrecomp writes beside the code of the game
 extern "C" {
     static recomp_abi: u32;
@@ -32,6 +38,9 @@ const NO_TOUCH: u32 = u32::MAX;
 
 pub struct Game {
     system: System,
+    /// none when the device has no sound output.
+    audio: Option<audio::Audio>,
+    frames: u64,
     /// the picture handed out last, kept until the next is asked for.
     picture: Option<Arc<Vec<u8>>>,
 }
@@ -66,7 +75,10 @@ pub unsafe extern "C" fn zakuro_open(rom: *const c_char, data_dir: *const c_char
         ..Config::default()
     };
     match loader::load(&rom, config) {
-        Ok(system) => Box::into_raw(Box::new(Game { system, picture: None })),
+        Ok(system) => {
+            let audio = audio::Audio::open(zakuro_core::AUDIO_SAMPLE_RATE).inspect_err(|error| log::warn!("no sound, {error}")).ok();
+            Box::into_raw(Box::new(Game { system, audio, frames: 0, picture: None }))
+        }
         Err(error) => {
             log::error!("could not open {rom}, {error}");
             std::ptr::null_mut()
@@ -89,7 +101,19 @@ pub unsafe extern "C" fn zakuro_run_frame(game: *mut Game) -> bool {
         ..InputState::default()
     };
     game.system.set_input(input);
-    matches!(game.system.run_frame(), FrameOutcome::Completed)
+    let outcome = game.system.run_frame();
+    let sound = game.system.take_audio();
+    if let Some(audio) = &game.audio {
+        audio.push(&sound);
+        game.frames += 1;
+        if game.frames % 300 == 0 {
+            let dry = audio.take_underruns();
+            if dry > 0 {
+                log::warn!("the sound ran dry {dry} times");
+            }
+        }
+    }
+    matches!(outcome, FrameOutcome::Completed)
 }
 
 /// the picture of a screen, 0 for the top and 1 for the bottom, as RGBA

@@ -14,5 +14,6 @@ doctest = false
 [dependencies]
 zakuro-common.workspace = true
 zakuro-core.workspace = true
+cpal = "0.16"
 env_logger = "0.11"
 log.workspace = true
