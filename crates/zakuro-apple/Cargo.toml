@@ -1,0 +1,18 @@
+[package]
+name = "zakuro-apple"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "Zakuro behind a C interface, for the iOS app to run a game recompiled and linked in"
+
+[lib]
+crate-type = ["staticlib"]
+# the code of the game is linked in by the app, so a test program of its own would have no code to link
+test = false
+doctest = false
+
+[dependencies]
+zakuro-common.workspace = true
+zakuro-core.workspace = true
+env_logger = "0.11"
+log.workspace = true

@@ -7,6 +7,7 @@ members = [
     "crates/zakuro-gpu",
     "crates/zakuro-core",
     "crates/zakuro",
+    "crates/zakuro-apple",
 ]
 
 [workspace.package]

@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CFBundleName</key><string>Zakuro</string>
+	<key>CFBundleDisplayName</key><string>Zakuro</string>
+	<key>CFBundleIdentifier</key><string>com.github.zakuro.game</string>
+	<key>CFBundleExecutable</key><string>Zakuro</string>
+	<key>CFBundlePackageType</key><string>APPL</string>
+	<key>CFBundleShortVersionString</key><string>VERSION</string>
+	<key>CFBundleVersion</key><string>1</string>
+	<key>MinimumOSVersion</key><string>17.0</string>
+	<key>UIDeviceFamily</key><array><integer>1</integer></array>
+	<key>UIRequiredDeviceCapabilities</key><array><string>arm64</string></array>
+	<key>UILaunchScreen</key><dict/>
+	<key>UISupportedInterfaceOrientations</key><array><string>UIInterfaceOrientationPortrait</string></array>
+	<key>UIStatusBarHidden</key><true/>
+	<!-- the game's files can be put in the app's folder from the Files app -->
+	<key>UIFileSharingEnabled</key><true/>
+	<key>LSSupportsOpeningDocumentsInPlace</key><true/>
+	<!-- the title id of the game whose code the app has linked in -->
+	<key>ZakuroProgramID</key><string>PROGRAMID</string>
+</dict>
+</plist>

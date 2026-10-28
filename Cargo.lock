@@ -4660,6 +4660,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "zakuro-apple"
+version = "0.2.30"
+dependencies = [
+ "env_logger",
+ "log",
+ "zakuro-common",
+ "zakuro-core",
+]
+
+[[package]]
 name = "zakuro-common"
 version = "0.2.30"
 dependencies = [
