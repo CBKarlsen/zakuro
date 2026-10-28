@@ -1,4 +1,4 @@
-# on a version tag, builds Zakuro for Windows and Linux and publishes both
+# on a version tag, builds Zakuro for Windows, Linux and macOS and publishes them
 # as a GitHub release
 name: Release
 
@@ -23,6 +23,8 @@ jobs:
             archive: zakuro-windows-x86_64.zip
           - os: ubuntu-latest
             archive: zakuro-linux-x86_64.tar.gz
+          - os: macos-latest
+            archive: zakuro-macos-arm64.zip
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v7
@@ -31,6 +33,9 @@ jobs:
       - name: Sound library headers
         if: runner.os == 'Linux'
         run: sudo apt-get update && sudo apt-get install -y libasound2-dev libudev-dev pkg-config
+      - name: MoltenVK and the Vulkan loader, for the app to carry
+        if: runner.os == 'macOS'
+        run: brew install molten-vk vulkan-loader
       - run: cargo build --release --locked -p zakuro
       - name: Pack for Windows
         if: runner.os == 'Windows'
@@ -38,6 +43,11 @@ jobs:
       - name: Pack for Linux
         if: runner.os == 'Linux'
         run: tar czf ${{ matrix.archive }} README.md LICENSE -C target/release zakuro
+      - name: Pack for macOS
+        if: runner.os == 'macOS'
+        run: |
+          macos/bundle.sh
+          ditto -c -k --keepParent target/release/Zakuro.app ${{ matrix.archive }}
       - uses: actions/upload-artifact@v7
         with:
           name: ${{ matrix.archive }}
@@ -57,7 +67,7 @@ jobs:
           TAG: ${{ inputs.tag || github.ref_name }}
         run: |
           cat > notes.md <<'NOTES'
-          On Windows, unzip zakuro-windows-x86_64.zip and run zakuro.exe. On Linux, extract zakuro-linux-x86_64.tar.gz and run ./zakuro, which needs the ALSA library (libasound2 on Debian and Ubuntu, alsa-lib on Arch).
+          On Windows, unzip zakuro-windows-x86_64.zip and run zakuro.exe. On a Mac with Apple silicon, unzip zakuro-macos-arm64.zip and move Zakuro.app to Applications. The app isn't notarized, so the first time, right-click it and choose Open, or run `xattr -cr /Applications/Zakuro.app` once. On Linux, extract zakuro-linux-x86_64.tar.gz and run ./zakuro, which needs the ALSA library (libasound2 on Debian and Ubuntu, alsa-lib on Arch).
 
           Games need to be decrypted ROMs. Recompiling a game, which makes it run much faster, needs a C compiler. Zakuro uses gcc or clang when the computer has one, and otherwise offers to download Zig, which needs no installing, into its own folder.
           NOTES

@@ -20,7 +20,7 @@ I first wrote it in C++, but I was learning Rust at the time and noticed there w
 
 This is a personal experimental project. You can use it to play games, but that was never the main goal. Some games boot. Instead of translating code while the game runs, like a JIT does, Zakuro runs code recompiled ahead of time by [3dsrecomp](https://github.com/fearkov/3dsrecomp), and tested games run at full speed that way. On the interpreter alone they run below full speed.
 
-Builds for Windows and Linux are on the [releases page](https://github.com/fearkov/zakuro/releases): on Windows, unzip it and run zakuro.exe, and on Linux, extract it and run ./zakuro.
+Builds for Windows and Linux are on the [releases page](https://github.com/fearkov/zakuro/releases): on Windows, unzip it and run zakuro.exe, and on Linux, extract it and run ./zakuro. On a Mac with Apple silicon, unzip zakuro-macos-arm64.zip and move Zakuro.app to Applications. It carries MoltenVK, which runs Vulkan on top of Metal, so nothing else needs installing. The app isn't notarized, so macOS blocks it the first time: right-click it and choose Open, or run `xattr -cr /Applications/Zakuro.app` once. `macos/bundle.sh` makes the app from source, with Homebrew's molten-vk and vulkan-loader installed.
 
 To build it yourself you need Rust 1.95 or newer. On Linux, building also needs pkg-config and the ALSA and udev development files (libasound2-dev and libudev-dev on Debian and Ubuntu, alsa-lib and systemd-libs on Arch). On Windows, nothing else is needed:
 
