@@ -20,7 +20,7 @@ repository = "https://github.com/fearkov/zakuro"
 zakuro-common = { path = "crates/zakuro-common" }
 zakuro-fs     = { path = "crates/zakuro-fs" }
 zakuro-cpu    = { path = "crates/zakuro-cpu" }
-zakuro-gpu    = { path = "crates/zakuro-gpu" }
+zakuro-gpu    = { path = "crates/zakuro-gpu", default-features = false }
 zakuro-core   = { path = "crates/zakuro-core" }
 
 log = "0.4"

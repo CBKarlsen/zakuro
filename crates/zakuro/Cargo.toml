@@ -16,7 +16,7 @@ path = "src/main.rs"
 zakuro-common.workspace = true
 zakuro-core.workspace = true
 zakuro-fs.workspace = true
-zakuro-gpu = { workspace = true, features = ["opengl", "vulkan"] }
+zakuro-gpu = { workspace = true, features = ["opengl", "vulkan", "jit"] }
 log.workspace = true
 env_logger = "0.11"
 winit = { version = "0.30", features = ["serde"] }
