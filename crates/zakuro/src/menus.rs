@@ -206,7 +206,8 @@ impl Menus {
         if library.changed {
             self.icons.clear();
         }
-        egui::Panel::top("library bar").show(ui, |ui| {
+        let margin = egui::Margin::symmetric(16, 8);
+        egui::Panel::top("library bar").frame(egui::Frame::side_top_panel(ui.style()).inner_margin(margin)).show(ui, |ui| {
             ui.add_space(6.0);
             ui.horizontal(|ui| {
                 ui.heading("Zakuro");
@@ -239,7 +240,7 @@ impl Menus {
                 None
             }
         };
-        egui::CentralPanel::default().show(ui, |ui| {
+        egui::CentralPanel::default().frame(egui::Frame::central_panel(ui.style()).inner_margin(margin)).show(ui, |ui| {
             if let Some((texture, size)) = background {
                 let area = ui.clip_rect();
                 let alpha = (settings.background_opacity.clamp(0.0, 1.0) * 255.0).round() as u8;
@@ -271,7 +272,7 @@ impl Menus {
                     let job = jobs.iter().find(|job| job.program_id == game.program_id);
                     // over a picture, each game gets a backing to keep it
                     // readable
-                    let mut frame = egui::Frame::group(ui.style());
+                    let mut frame = egui::Frame::group(ui.style()).corner_radius(10).inner_margin(12);
                     if background.is_some() {
                         frame = frame.fill(ui.visuals().panel_fill.gamma_multiply(0.85));
                     }
@@ -322,7 +323,8 @@ impl Menus {
                                 return;
                             }
                             ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
-                                if ui.button(RichText::new("▶ Play").size(15.0)).clicked() {
+                                let play = egui::Button::new(RichText::new("▶ Play").size(15.0).color(Color32::WHITE)).fill(ui.visuals().selection.bg_fill);
+                                if ui.add(play).clicked() {
                                     actions.push(Action::Play(game.path.clone()));
                                 }
                                 match job {

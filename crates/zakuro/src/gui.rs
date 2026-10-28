@@ -29,7 +29,8 @@ impl Gui {
             ViewportId::ROOT,
             window,
             Some(window.scale_factor() as f32),
-            None,
+            // macOS has one look for the whole window, so the interface follows it
+            if cfg!(target_os = "macos") { window.theme() } else { None },
             Some(8192),
         );
         Gui { ctx, state }
