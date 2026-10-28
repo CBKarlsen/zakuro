@@ -16,7 +16,14 @@ pub struct Gui {
 impl Gui {
     pub fn new(window: &Window) -> Gui {
         let ctx = egui::Context::default();
-        ctx.set_fonts(fonts(system_fonts()));
+        #[cfg_attr(not(target_os = "macos"), allow(unused_mut))]
+        let mut definitions = fonts(system_fonts());
+        #[cfg(target_os = "macos")]
+        {
+            crate::mac_style::fonts(&mut definitions);
+            crate::mac_style::style(&ctx);
+        }
+        ctx.set_fonts(definitions);
         let state = egui_winit::State::new(
             ctx.clone(),
             ViewportId::ROOT,

@@ -9,6 +9,8 @@ mod gamepad;
 mod gui;
 mod input;
 mod library;
+#[cfg(target_os = "macos")]
+mod mac_style;
 mod menus;
 mod present;
 mod recompile;
