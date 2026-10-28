@@ -5,6 +5,7 @@
 	<key>CFBundleName</key><string>Zakuro</string>
 	<key>CFBundleIdentifier</key><string>com.github.zakuro</string>
 	<key>CFBundleExecutable</key><string>Zakuro</string>
+	<key>CFBundleIconFile</key><string>Zakuro</string>
 	<key>CFBundlePackageType</key><string>APPL</string>
 	<key>CFBundleShortVersionString</key><string>VERSION</string>
 	<key>LSMinimumSystemVersion</key><string>13.0</string>
