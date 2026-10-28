@@ -302,7 +302,9 @@ fn card(
                         let stage = job.stage();
                         let elapsed = job.elapsed().as_secs();
                         let text = format!("{}, {}:{:02}", stage_text(&stage), elapsed / 60, elapsed % 60);
-                        ui.add(egui::ProgressBar::new(stage.fraction()).desired_width(ui.available_width()).text(text));
+                        // the bar's own text is drawn in the selection's white, too pale on its track
+                    ui.label(RichText::new(text).small().weak());
+                    ui.add(egui::ProgressBar::new(stage.fraction()).desired_width(ui.available_width()));
                         if ui.small_button("Cancel").clicked() {
                             actions.push(Action::CancelRecompile(job.program_id));
                         }
