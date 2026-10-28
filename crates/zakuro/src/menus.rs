@@ -408,6 +408,7 @@ impl Menus {
             return actions;
         }
         egui::Window::new("Paused")
+            .default_width(232.0)
             .collapsible(false)
             .resizable(false)
             .anchor(egui::Align2::CENTER_CENTER, Vec2::ZERO)

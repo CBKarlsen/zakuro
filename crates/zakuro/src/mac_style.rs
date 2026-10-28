@@ -71,7 +71,7 @@ pub fn style(ctx: &egui::Context) {
 
 fn apply(style: &mut Style, palette: &Palette) {
     style.text_styles = [
-        (TextStyle::Heading, FontId::proportional(22.0)),
+        (TextStyle::Heading, FontId::proportional(18.0)),
         (TextStyle::Body, FontId::proportional(14.0)),
         (TextStyle::Button, FontId::proportional(14.0)),
         (TextStyle::Small, FontId::proportional(12.0)),
