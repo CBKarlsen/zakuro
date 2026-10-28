@@ -1,5 +1,7 @@
 //! the library, the menu over a game and the settings, drawn with egui.
 
+mod dashboard;
+
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 use std::sync::mpsc::{channel, Receiver};
@@ -202,6 +204,10 @@ fn cover(area: Vec2, picture: [usize; 2]) -> egui::Rect {
 impl Menus {
     /// the library, filling the window.
     pub fn library(&mut self, ui: &mut egui::Ui, library: &Library, settings: &Settings, jobs: &[Job]) -> Vec<Action> {
+        // the Mac gets the dashboard, the other systems the list
+        if cfg!(target_os = "macos") {
+            return self.dashboard(ui, library, settings, jobs);
+        }
         let mut actions = Vec::new();
         if library.changed {
             self.icons.clear();
@@ -943,20 +949,24 @@ impl Menus {
     }
 }
 
-/// a recompile's progress bar with where it is.
-fn progress(ui: &mut egui::Ui, job: &Job) {
-    let stage = job.stage();
-    let text = match &stage {
+/// where a recompile is, in words.
+fn stage_text(stage: &Stage) -> String {
+    match stage {
         Stage::Downloading(arrived) => format!("downloading the compiler, {:.0}%", arrived * 100.0),
         Stage::Generating => "finding the code".to_owned(),
         Stage::Compiling { done, total } => format!("compiling {done} of {total}"),
         Stage::Installing => "installing".to_owned(),
         Stage::Done => "done".to_owned(),
         Stage::Failed(error) => format!("failed, {error}"),
-    };
+    }
+}
+
+/// a recompile's progress bar with where it is.
+fn progress(ui: &mut egui::Ui, job: &Job) {
+    let stage = job.stage();
     let minutes = job.elapsed().as_secs() / 60;
     let seconds = job.elapsed().as_secs() % 60;
-    ui.add(egui::ProgressBar::new(stage.fraction()).desired_width(220.0).text(format!("{text}, {minutes}:{seconds:02}")));
+    ui.add(egui::ProgressBar::new(stage.fraction()).desired_width(220.0).text(format!("{}, {minutes}:{seconds:02}", stage_text(&stage))));
 }
 
 /// a key as a person would call it.
