@@ -554,7 +554,7 @@ pub(crate) fn pipeline_cache(title: u64) -> Option<std::path::PathBuf> {
     let var = |name: &str| std::env::var_os(name).filter(|value| !value.is_empty()).map(std::path::PathBuf::from);
     let dir = if cfg!(windows) {
         var("LOCALAPPDATA")
-    } else if cfg!(target_os = "macos") {
+    } else if cfg!(any(target_os = "macos", target_os = "ios")) {
         var("HOME").map(|home| home.join("Library/Caches"))
     } else {
         var("XDG_CACHE_HOME").or_else(|| var("HOME").map(|home| home.join(".cache")))
@@ -5501,29 +5501,37 @@ pub(crate) fn can_render(instance: &ash::Instance, device: vk::PhysicalDevice, f
     families.get(family as usize).is_some_and(|f| f.queue_flags.contains(both)) && renders_on(instance, device)
 }
 
-/// the Vulkan loader, by name, or on macOS where the app bundle and Homebrew
-/// keep it out of the library search path, from where they put it.
+/// the Vulkan loader, by name, or on Apple systems, where an app bundle and
+/// Homebrew keep it out of the library search path, from where they put it.
+/// on iOS there is no loader, and MoltenVK stands in for one.
 pub(crate) fn load_entry() -> Result<ash::Entry, ash::LoadingError> {
     // SAFETY: loads the system's Vulkan library, which has no other
     // requirements
     let found = unsafe { ash::Entry::load() };
-    if !cfg!(target_os = "macos") {
+    if !cfg!(any(target_os = "macos", target_os = "ios")) {
         return found;
     }
     // the bundle's Frameworks folder is next to the folder the program is in
-    let bundled = std::env::current_exe().ok().and_then(|exe| Some(exe.parent()?.join("../Frameworks")));
-    let mut dirs = bundled.into_iter().chain(["/opt/homebrew/lib", "/usr/local/lib"].map(Into::into));
+    // on macOS, and next to the program on iOS
+    let bundled = std::env::current_exe().ok().and_then(|exe| exe.parent().map(std::path::Path::to_owned)).into_iter();
+    let mut dirs = bundled
+        .flat_map(|dir| [dir.join("../Frameworks"), dir.join("Frameworks")])
+        .chain(["/opt/homebrew/lib", "/usr/local/lib"].map(Into::into));
     // shortcut: the Vulkan SDK's own folder isn't tried, add it here if it's needed
     found.or_else(|error| {
-        dirs
-            // SAFETY: as above
-            .find_map(|dir| unsafe { ash::Entry::load_from(dir.join("libvulkan.dylib")) }.ok())
-            .ok_or(error)
+        dirs.find_map(|dir| {
+            ["libvulkan.dylib", "libMoltenVK.dylib"]
+                .into_iter()
+                // SAFETY: as above
+                .find_map(|name| unsafe { ash::Entry::load_from(dir.join(name)) }.ok())
+        })
+        .ok_or(error)
     })
 }
 
 /// the instance extension and flag the loader lists a portability driver
-/// with, MoltenVK on macOS, which it leaves out otherwise. nothing elsewhere.
+/// with, MoltenVK on macOS and iOS, which it leaves out otherwise. nothing
+/// elsewhere.
 pub(crate) fn portability_instance(entry: &ash::Entry) -> (Vec<*const std::ffi::c_char>, vk::InstanceCreateFlags) {
     let name = ash::khr::portability_enumeration::NAME;
     let listed = || {
@@ -5531,7 +5539,7 @@ pub(crate) fn portability_instance(entry: &ash::Entry) -> (Vec<*const std::ffi::
         let available = unsafe { entry.enumerate_instance_extension_properties(None) }.unwrap_or_default();
         available.iter().any(|e| e.extension_name_as_c_str() == Ok(name))
     };
-    if cfg!(target_os = "macos") && listed() {
+    if cfg!(any(target_os = "macos", target_os = "ios")) && listed() {
         (vec![name.as_ptr()], vk::InstanceCreateFlags::ENUMERATE_PORTABILITY_KHR)
     } else {
         (Vec::new(), vk::InstanceCreateFlags::empty())
